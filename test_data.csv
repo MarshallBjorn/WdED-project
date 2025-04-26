@@ -1,0 +1,11 @@
+age,income,education,class
+25,50000,Bachelor,Yes
+30,75000,Master,No
+35,,PhD,Yes
+42,120000,Bachelor,No
+28,62000,,Yes
+31,None,Master,No
+45,95000,PhD,Yes
+38,110000,Bachelor,No
+,88000,Master,Yes
+33,67000,PhD,No
