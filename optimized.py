@@ -159,6 +159,10 @@ def compare_criteria(data):
 
     return main_result, secondary_result
 
+def save_discretized_data(discretized_df, output_path):
+    """ Saves the discretized DataFrame to a CSV file. """
+    discretized_df.to_csv(output_path, index=False)
+    print(f"Discretized data saved to '{output_path}'")
 
 if __name__ == "__main__":
     test_files = ["qewrty.csv", "test_data.csv", "iris.csv"]
@@ -179,6 +183,9 @@ if __name__ == "__main__":
 
             print("\nSecondary criterion discretization:")
             print(secondary_disc.head())
+
+            save_discretized_data(main_disc, f"{file}_main_discretized.csv")
+            save_discretized_data(secondary_disc, f"{file}_secondary_discretized.csv")
 
         except (FileNotFoundError, ValueError, InvalidDataError) as e:
             print(e, "\n")
