@@ -1,5 +1,4 @@
 import itertools
-
 import pandas as pd
 import os
 
@@ -43,8 +42,7 @@ def load_data(file_path):
 
     # Identify numeric columns for discretization
     numeric_cols = data.select_dtypes(include=["float64", "int64"]).columns
-    print(f"Numeric columns identified for discretization: {
-          list(numeric_cols)}")
+    print(f"Numeric columns identified for discretization: {list(numeric_cols)}")
 
     if len(data.columns) < 2:
         raise InvalidDataError(
@@ -64,7 +62,18 @@ def prepare_for_discretization(data):
     return attribute_columns, decision_column
 
 
-def discretize_data(data):
+def discretize_data(data, use_secondary_criterion=False):
+    """
+    Discretizes data using either the main criterion (maximize separated pairs) 
+    or secondary criterion (minimize number of intervals)
+    
+    Args:
+        data: input DataFrame
+        use_secondary_criterion: if True, uses the secondary criterion
+        
+    Returns:
+        discretized DataFrame and statistics about the discretization
+    """
     attributes, decision = prepare_for_discretization(data)
 
     cuts = {attr: [] for attr in attributes}
@@ -79,12 +88,21 @@ def discretize_data(data):
 
     # Keep track of which pairs are separated
     separated_pairs = set()
+    
+    # Statistics
+    stats = {
+        'total_pairs': len(object_pairs),
+        'separated_pairs': 0,
+        'cuts_added': 0,
+        'cuts_per_attribute': {attr: 0 for attr in attributes}
+    }
 
     while True:
         best_attr = None
         best_cut = None
         best_gain = 0
         best_new_separations = set()
+        best_cuts_count = float('inf')  # for secondary criterion
 
         # Try every attribute and every possible cut
         for attr in attributes:
@@ -109,12 +127,26 @@ def discretize_data(data):
                             break
 
                 gain = len(new_separations - separated_pairs)
-
-                if gain > best_gain:
-                    best_gain = gain
-                    best_attr = attr
-                    best_cut = cut
-                    best_new_separations = new_separations
+                cuts_count = len(temp_cuts)
+                
+                # Evaluate based on selected criterion
+                if use_secondary_criterion:
+                    # Secondary criterion: minimize number of cuts while separating at least one new pair
+                    if gain > 0 and (cuts_count < best_cuts_count or 
+                                    (cuts_count == best_cuts_count and gain > best_gain)):
+                        best_gain = gain
+                        best_attr = attr
+                        best_cut = cut
+                        best_new_separations = new_separations
+                        best_cuts_count = cuts_count
+                else:
+                    # Main criterion: maximize number of separated pairs
+                    if gain > best_gain:
+                        best_gain = gain
+                        best_attr = attr
+                        best_cut = cut
+                        best_new_separations = new_separations
+                        best_cuts_count = cuts_count
 
         if best_gain == 0:
             # No further improvement
@@ -124,8 +156,13 @@ def discretize_data(data):
         cuts[best_attr].append(best_cut)
         cuts[best_attr] = sorted(cuts[best_attr])
         separated_pairs.update(best_new_separations)
+        stats['cuts_added'] += 1
+        stats['cuts_per_attribute'][best_attr] += 1
+        stats['separated_pairs'] = len(separated_pairs)
 
         print(f"Added cut {best_cut} on attribute '{best_attr}', separated {best_gain} new pairs.")
+        print(f"Total separated pairs: {len(separated_pairs)}/{len(object_pairs)}")
+        print(f"Current cuts: {cuts}\n")
 
     # Discretize attributes based on cuts
     discretized = []
@@ -152,7 +189,30 @@ def discretize_data(data):
         new_row.append(row[decision])
         discretized.append(new_row)
 
-    return pd.DataFrame(discretized)
+    discretized_df = pd.DataFrame(discretized, columns=attributes + [decision])
+    
+    # Calculate statistics
+    stats['coverage'] = stats['separated_pairs'] / stats['total_pairs'] if stats['total_pairs'] > 0 else 0
+    stats['average_cuts_per_attribute'] = stats['cuts_added'] / len(attributes) if len(attributes) > 0 else 0
+    
+    return discretized_df, stats
+
+
+def compare_criteria(data):
+    """Compares the main and secondary criteria"""
+    print("\n=== Using MAIN CRITERION (maximize separated pairs) ===")
+    main_result, main_stats = discretize_data(data, use_secondary_criterion=False)
+    
+    print("\n=== Using SECONDARY CRITERION (minimize number of intervals) ===")
+    secondary_result, secondary_stats = discretize_data(data, use_secondary_criterion=True)
+    
+    print("\n=== Comparison Results ===")
+    print(f"{'Metric':<30} {'Main Criterion':<20} {'Secondary Criterion':<20}")
+    print(f"{'Number of separated pairs':<30} {main_stats['separated_pairs']:<20} {secondary_stats['separated_pairs']:<20}")
+    print(f"{'Total cuts added':<30} {main_stats['cuts_added']:<20} {secondary_stats['cuts_added']:<20}")
+    print(f"{'Coverage (separated/total)':<30} {main_stats['coverage']:<20.2%} {secondary_stats['coverage']:<20.2%}")
+    
+    return main_result, secondary_result
 
 
 if __name__ == "__main__":
@@ -160,9 +220,20 @@ if __name__ == "__main__":
 
     for file in test_files:
         try:
+            print(f"\n{'='*50}")
             print(f"Processing file: {file}")
             data = load_data(file)
             attributes, decision = prepare_for_discretization(data)
             print(data.head(), "\n")
+            
+            # Compare both criteria
+            main_disc, secondary_disc = compare_criteria(data)
+            
+            print("\nMain criterion discretization:")
+            print(main_disc.head())
+            
+            print("\nSecondary criterion discretization:")
+            print(secondary_disc.head())
+            
         except (FileNotFoundError, ValueError, InvalidDataError) as e:
             print(e, "\n")
