@@ -1,3 +1,5 @@
+import itertools
+
 import pandas as pd
 import os
 
@@ -67,10 +69,63 @@ def discretize_data(data):
 
     cuts = {attr: [] for attr in attributes}
 
-    # Todo:
-    #   generowanie par
-    #   implementacja kryteriów
-    #   wybieranie najlepszych cięć
+    # Generate all object pairs with different decisions
+    object_pairs = []
+    for (idx1, row1), (idx2, row2) in itertools.combinations(data.iterrows(), 2):
+        if row1.iloc[-1] != row2.iloc[-1]:  # different decision
+            object_pairs.append((idx1, idx2))
+
+    print(f"Generated {len(object_pairs)} object pairs with different decisions.")
+
+    # Keep track of which pairs are separated
+    separated_pairs = set()
+
+    while True:
+        best_attr = None
+        best_cut = None
+        best_gain = 0
+        best_new_separations = set()
+
+        # Try every attribute and every possible cut
+        for attr in attributes:
+            values = data[attr].unique()
+            possible_cuts = [(values[i] + values[i + 1]) / 2 for i in range(len(values) - 1)]
+            possible_cuts = sorted(set(possible_cuts))  # unique cuts
+
+            for cut in possible_cuts:
+                temp_cuts = cuts[attr] + [cut]
+                temp_cuts = sorted(temp_cuts)
+
+                new_separations = set()
+
+                for idx1, idx2 in object_pairs:
+                    row1 = data.loc[idx1]
+                    row2 = data.loc[idx2]
+
+                    # Check if the two objects are separated by this set of cuts
+                    for c in temp_cuts:
+                        if (row1[attr] <= c and row2[attr] > c) or (row2[attr] <= c and row1[attr] > c):
+                            new_separations.add((idx1, idx2))
+                            break
+
+                gain = len(new_separations - separated_pairs)
+
+                if gain > best_gain:
+                    best_gain = gain
+                    best_attr = attr
+                    best_cut = cut
+                    best_new_separations = new_separations
+
+        if best_gain == 0:
+            # No further improvement
+            break
+
+        # Apply the best cut
+        cuts[best_attr].append(best_cut)
+        cuts[best_attr] = sorted(cuts[best_attr])
+        separated_pairs.update(best_new_separations)
+
+        print(f"Added cut {best_cut} on attribute '{best_attr}', separated {best_gain} new pairs.")
 
     # Discretize attributes based on cuts
     discretized = []
