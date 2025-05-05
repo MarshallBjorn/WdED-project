@@ -2,10 +2,10 @@ import unittest
 import pandas as pd
 import os
 import numpy as np
-from optimized import load_data, discretize_data, InvalidDataError
+from main import load_data, discretize_data, InvalidDataError
 
 
-class TestOptimizedDiscretization(unittest.TestCase):
+class TestDiscretization(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.create_test_files()
@@ -122,7 +122,7 @@ class TestOptimizedDiscretization(unittest.TestCase):
         discretized, stats = discretize_data(data.copy(), verbose=False)
         elapsed = time.time() - start_time
 
-        print(f"\noptimized.py took {elapsed:.2f} seconds")
+        print(f"\nmain.py took {elapsed:.2f} seconds")
         self.assertEqual(len(discretized), len(data))
         self.assertGreater(stats['separated_pairs'], 0)
         self.assertGreater(stats['cuts_added'], 0)
