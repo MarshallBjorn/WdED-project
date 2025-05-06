@@ -249,7 +249,7 @@ def compare_criteria(data):
 
 def save_discretized_data(discretized_df, output_path):
     """Saves the discretized DataFrame to a CSV file."""
-    discretized_df.to_csv(output_path, index=False)
+    discretized_df.to_csv(output_path, index=False, header=False)
     print(f"Discretized data saved to '{output_path}'")
 
 
