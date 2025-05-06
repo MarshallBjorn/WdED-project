@@ -44,15 +44,15 @@ def load_data(file_path):
     numeric_cols = data.select_dtypes(include=["float64", "int64"]).columns
     print(f"Numeric columns identified for discretization: {list(numeric_cols)}")
 
-    if len(data.columns) < 2:
-        raise InvalidDataError(
-            "Error: The dataset must contain at least one attribute and one decision column."
-        )
+    # if len(data.columns) < 2:
+    #     raise InvalidDataError(
+    #         "Error: The dataset must contain at least one attribute and one decision column."
+    #     )
 
-    if len(numeric_cols) != len(data.columns) - 1:
-        raise InvalidDataError(
-            "Error: Invalid dataset. Expected n-1 numerical columns and a decision one (nth)."
-        )
+    # if len(numeric_cols) != len(data.columns) - 1:
+    #     raise InvalidDataError(
+    #         "Error: Invalid dataset. Expected n-1 numerical columns and a decision one (nth)."
+    #     )
 
     return data
 
@@ -254,7 +254,7 @@ def save_discretized_data(discretized_df, output_path):
 
 
 if __name__ == "__main__":
-    test_files = ["qewrty.csv", "test_data.csv", "iris.csv"]
+    test_files = ["data2.csv", "data3.csv"]
 
     for file in test_files:
         print(f"\n{'='*50}")
