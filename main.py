@@ -253,28 +253,30 @@ def save_discretized_data(discretized_df, output_path):
     print(f"Discretized data saved to '{output_path}'")
 
 
+def start_algorithm(file):
+    try:
+        data = load_data(file)
+        attributes, decision = prepare_for_discretization(data)
+        print(data.head(), "\n")
+
+        main_disc, secondary_disc = compare_criteria(data)
+
+        print("\nMain criterion discretization:")
+        print(main_disc.head())
+
+        print("\nSecondary criterion discretization:")
+        print(secondary_disc.head())
+
+        save_discretized_data(main_disc, f"DISC{file}")
+
+    except (FileNotFoundError, ValueError, InvalidDataError) as e:
+        print(e, "\n")
+
+
 if __name__ == "__main__":
     test_files = ["data2.csv", "data3.csv"]
 
     for file in test_files:
         print(f"\n{'='*50}")
         print(f"Processing file: {file}")
-
-        try:
-            data = load_data(file)
-            attributes, decision = prepare_for_discretization(data)
-            print(data.head(), "\n")
-
-            main_disc, secondary_disc = compare_criteria(data)
-
-            print("\nMain criterion discretization:")
-            print(main_disc.head())
-
-            print("\nSecondary criterion discretization:")
-            print(secondary_disc.head())
-
-            save_discretized_data(main_disc, f"{file}_main_discretized.csv")
-            save_discretized_data(secondary_disc, f"{file}_secondary_discretized.csv")
-
-        except (FileNotFoundError, ValueError, InvalidDataError) as e:
-            print(e, "\n")
+        start_algorithm(file)
