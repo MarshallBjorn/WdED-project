@@ -267,7 +267,11 @@ def start_algorithm(file):
         print("\nSecondary criterion discretization:")
         print(secondary_disc.head())
 
-        save_discretized_data(main_disc, f"DISC{file}")
+        filename = os.path.basename(file)
+        new_filename = f"DISC{filename}"
+
+
+        save_discretized_data(main_disc, new_filename)
 
     except (FileNotFoundError, ValueError, InvalidDataError) as e:
         print(e, "\n")
